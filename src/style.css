@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  overflow: hidden;
+  /* Performance: force GPU compositing */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Prevent pull-to-refresh and bounce on iOS */
+html {
+  overscroll-behavior: none;
+}
+
+/* Canvas should fill screen on mobile */
+canvas {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Animationen für Mobile Rotate-Hinweis */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes rotatePhone {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(90deg); }
+  50%      { transform: rotate(90deg); }
+  75%      { transform: rotate(0deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth scroll for HomePage */
+.homepage-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Spinner for loading screens */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Skeleton loading pulse */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Smooth scroll behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Dialog (modal) backdrop */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+dialog {
+  animation: fadeIn 0.25s ease;
+}
+
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+}

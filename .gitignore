@@ -1,0 +1,48 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Project-specific: backups, docs, archives =====
+*.zip
+*.docx
+PROTOCOL.md
+.vscode/
+
+# ===== Large original 3D source files (not used at runtime) =====
+# Keep only the compressed/transformed versions the app actually loads
+public/couch/couch.glb
+public/couch/couch.obj
+public/couch/couch.mtl
+public/lamp/
+public/light/industrial_wall_sconce_4k.glb
+public/light/wall-lamp-draco.glb
+public/sofa/
+public/room2to8/room2/dining_room__kichen_baked/
+public/room2to8/room2/dining_room__kichen_baked.zip
+public/room2to8/room3/cozy_living_room_baked.zip
+public/room2to8/room3/scene.bin
+public/room2to8/room3/scene.gltf
+public/room2to8/room3/textures/
+public/room2to8/room3/license.txt
+*.blend
+*.exr
