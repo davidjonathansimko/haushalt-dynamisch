@@ -8,6 +8,7 @@
     "@react-three/drei": "9.92.7",
     "@react-three/fiber": "8.15.12",
     "@react-three/postprocessing": "2.15.11",
+    "@supabase/supabase-js": "^2.98.0",
     "@types/three": "0.160.0",
     "lodash": "^4.17.21",
     "maath": "^0.10.7",

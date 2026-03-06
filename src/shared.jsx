@@ -78,6 +78,21 @@ export function Effects({ roomId = "default" }) {
     } catch (e) { /* ignore */ }
   }, [storageKey])
 
+  // Listen for camera-loaded event (from Supabase fetch in SceneOverlay)
+  useEffect(() => {
+    const onLoaded = (e) => {
+      const cam = e.detail
+      if (cam) {
+        savedCamera.current = cam
+        orbit.current.theta = cam.theta ?? DEFAULT_THETA
+        orbit.current.phi = cam.phi ?? DEFAULT_PHI
+        orbit.current.radius = cam.radius ?? DEFAULT_RADIUS
+      }
+    }
+    window.addEventListener("camera-loaded", onLoaded)
+    return () => window.removeEventListener("camera-loaded", onLoaded)
+  }, [])
+
   // Listen for camera-control-mode events from the overlay
   useEffect(() => {
     const onMode = (e) => { cameraControlActive.current = !!e.detail }

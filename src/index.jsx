@@ -5,6 +5,7 @@ import { Suspense, lazy } from "react"
 import { HomePage } from "./HomePage"
 import { LangProvider } from "./i18n"
 import { CartProvider } from "./CartContext"
+import { AdminProvider } from "./AdminContext"
 import "./style.css"
 
 // Lazy-load 3D scene pages — they pull in Three.js, drei, postprocessing etc.
@@ -47,18 +48,20 @@ createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <LangProvider>
       <CartProvider>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/kuche" element={<App />} />
-            <Route path="/wohnzimmer" element={<VegetablesApp />} />
-            <Route path="/galerie" element={<GalleryPage />} />
-            <Route path="/dining" element={<DiningApp />} />
-            <Route path="/cozy-living" element={<CozyLivingApp />} />
-            <Route path="/room/1" element={<RoomApp />} />
-            <Route path="/room/:id" element={<RoomPlaceholder />} />
-          </Routes>
-        </Suspense>
+        <AdminProvider>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/kuche" element={<App />} />
+              <Route path="/wohnzimmer" element={<VegetablesApp />} />
+              <Route path="/galerie" element={<GalleryPage />} />
+              <Route path="/dining" element={<DiningApp />} />
+              <Route path="/cozy-living" element={<CozyLivingApp />} />
+              <Route path="/room/1" element={<RoomApp />} />
+              <Route path="/room/:id" element={<RoomPlaceholder />} />
+            </Routes>
+          </Suspense>
+        </AdminProvider>
       </CartProvider>
     </LangProvider>
   </BrowserRouter>

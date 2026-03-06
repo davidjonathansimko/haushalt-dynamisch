@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom"
 import { useLang, useTranslations, useCurrency, itemNames, langFlags, langLabels } from "./i18n"
 import { isMobile as checkMobile } from "./shared"
 import { useCart, cartTotal, cartCount } from "./CartContext"
+import { useAdmin } from "./AdminContext"
+import { supabase } from "./supabase"
 
 export function SceneOverlay({ items, hovered, roomId = "default" }) {
   const [listOpen, setListOpen] = useState(false)
@@ -19,6 +21,12 @@ export function SceneOverlay({ items, hovered, roomId = "default" }) {
   const { lang, setLang } = useLang()
   const { symbol, rate, code } = useCurrency()
   const { cart, dispatch } = useCart()
+  const { isAdmin, user, login, logout } = useAdmin()
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
+  const [loginLoading, setLoginLoading] = useState(false)
 
   useEffect(() => {
     const r = () => {
@@ -46,21 +54,72 @@ export function SceneOverlay({ items, hovered, roomId = "default" }) {
     return () => window.removeEventListener("camera-saved", onSaved)
   }, [storageKey])
 
+  // Load camera from Supabase on mount (for all users)
+  useEffect(() => {
+    supabase
+      .from("camera_settings")
+      .select("theta, phi, radius")
+      .eq("room_id", roomId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          // Store in localStorage so Effects picks it up
+          localStorage.setItem(storageKey, JSON.stringify(data))
+          setCameraSaved(true)
+          // Notify Effects to re-read
+          window.dispatchEvent(new CustomEvent("camera-loaded", { detail: data }))
+        }
+      })
+  }, [roomId, storageKey])
+
   // Toggle camera control mode
   const toggleCameraMode = () => {
     const next = !cameraMode
     setCameraMode(next)
     window.dispatchEvent(new CustomEvent("camera-control-mode", { detail: next }))
   }
-  const saveCamera = () => {
+  const saveCamera = async () => {
     window.dispatchEvent(new CustomEvent("camera-save"))
     setCameraMode(false)
     window.dispatchEvent(new CustomEvent("camera-control-mode", { detail: false }))
+    // Also persist to Supabase so all users see this default
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const cam = JSON.parse(stored)
+        await supabase.from("camera_settings").upsert({
+          room_id: roomId,
+          theta: cam.theta,
+          phi: cam.phi,
+          radius: cam.radius,
+        }, { onConflict: "room_id" })
+      }
+    } catch (e) { console.warn("Supabase camera save failed:", e) }
   }
-  const resetCamera = () => {
+  const resetCamera = async () => {
     window.dispatchEvent(new CustomEvent("camera-reset"))
     setCameraMode(false)
     window.dispatchEvent(new CustomEvent("camera-control-mode", { detail: false }))
+    // Also delete from Supabase
+    try {
+      await supabase.from("camera_settings").delete().eq("room_id", roomId)
+    } catch (e) { console.warn("Supabase camera reset failed:", e) }
+  }
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoginError("")
+    setLoginLoading(true)
+    try {
+      await login(loginEmail, loginPassword)
+      setLoginOpen(false)
+      setLoginEmail("")
+      setLoginPassword("")
+    } catch (err) {
+      setLoginError(err.message)
+    } finally {
+      setLoginLoading(false)
+    }
   }
 
   // Close lang dropdown on outside click
@@ -209,11 +268,11 @@ export function SceneOverlay({ items, hovered, roomId = "default" }) {
           )}
         </button>
 
-        {/* Camera control (crosshair) button */}
-        {!mobile && (
+        {/* Camera control (crosshair) button — admin only */}
+        {!mobile && isAdmin && (
           <button
             onClick={toggleCameraMode}
-            title="Camera Control"
+            title="Camera Control (Admin)"
             style={{
               ...btnBase,
               background: cameraMode ? "#fff" : "rgba(0,0,0,0.6)",
@@ -231,6 +290,46 @@ export function SceneOverlay({ items, hovered, roomId = "default" }) {
               <line x1="18" y1="12" x2="22" y2="12" />
             </svg>
           </button>
+        )}
+
+        {/* Admin login/logout button */}
+        {!mobile && (
+          isAdmin ? (
+            <button
+              onClick={logout}
+              title={`Logged in as ${user?.email}`}
+              style={{
+                ...btnBase,
+                background: "rgba(46,204,113,0.7)",
+                color: "#fff",
+                padding: "10px 16px",
+                fontSize: "12px",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() => setLoginOpen(true)}
+              title="Admin Login"
+              style={{
+                ...btnBase,
+                background: "rgba(0,0,0,0.6)",
+                color: "#fff",
+                padding: "10px 16px",
+                fontSize: "12px",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </button>
+          )
         )}
       </div>
 
@@ -575,6 +674,96 @@ export function SceneOverlay({ items, hovered, roomId = "default" }) {
             background: mobile ? "rgba(0,0,0,0.5)" : "transparent",
           }}
         />
+      )}
+
+      {/* ===== ADMIN LOGIN MODAL ===== */}
+      {loginOpen && (
+        <>
+          <div
+            onClick={() => setLoginOpen(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 2000,
+              background: "rgba(0,0,0,0.6)",
+              backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            }}
+          />
+          <div style={{
+            position: "fixed", top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)", zIndex: 2001,
+            background: "rgba(20,20,20,0.95)", borderRadius: "20px",
+            padding: "32px", width: "90%", maxWidth: "360px",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            fontFamily: "'Inter','Segoe UI',sans-serif",
+          }}>
+            <div style={{
+              fontSize: "11px", fontWeight: 600, letterSpacing: "2.5px",
+              textTransform: "uppercase", color: "rgba(255,255,255,0.4)",
+              marginBottom: "20px",
+            }}>
+              🔒 Admin Login
+            </div>
+            <form onSubmit={handleLogin}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                autoFocus
+                style={{
+                  width: "100%", padding: "12px 16px", marginBottom: "12px",
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "10px", color: "#fff", fontSize: "14px",
+                  fontFamily: "'Inter','Segoe UI',sans-serif",
+                  outline: "none", boxSizing: "border-box",
+                }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                style={{
+                  width: "100%", padding: "12px 16px", marginBottom: "16px",
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "10px", color: "#fff", fontSize: "14px",
+                  fontFamily: "'Inter','Segoe UI',sans-serif",
+                  outline: "none", boxSizing: "border-box",
+                }}
+              />
+              {loginError && (
+                <div style={{
+                  marginBottom: "12px", padding: "8px 12px",
+                  background: "rgba(231,76,60,0.15)", border: "1px solid rgba(231,76,60,0.3)",
+                  borderRadius: "8px", color: "#e74c3c", fontSize: "12px",
+                }}>
+                  {loginError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button type="submit" disabled={loginLoading} style={{
+                  flex: 1, padding: "12px", border: "none", borderRadius: "10px",
+                  background: loginLoading ? "rgba(255,255,255,0.1)" : "#fff",
+                  color: loginLoading ? "rgba(255,255,255,0.4)" : "#111",
+                  fontSize: "13px", fontWeight: 700, cursor: loginLoading ? "wait" : "pointer",
+                  fontFamily: "'Inter','Segoe UI',sans-serif",
+                  transition: "all 0.3s",
+                }}>
+                  {loginLoading ? "..." : "Login"}
+                </button>
+                <button type="button" onClick={() => setLoginOpen(false)} style={{
+                  padding: "12px 20px", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "10px", background: "transparent",
+                  color: "rgba(255,255,255,0.5)", fontSize: "13px", fontWeight: 600,
+                  cursor: "pointer", fontFamily: "'Inter','Segoe UI',sans-serif",
+                  transition: "all 0.3s",
+                }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
       )}
     </>
   )
