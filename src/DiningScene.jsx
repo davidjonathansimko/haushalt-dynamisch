@@ -19,7 +19,7 @@ const PRICES_EUR = {
   FENSTER: 799,
 }
 
-const GLB_PATH = "/room2to8/room2/dining_room__kichen_baked.glb"
+const GLB_PATH = "/room2to8/room2/dining_room__kichen_baked-draco.glb"
 
 export function DiningScene(props) {
   const { nodes, materials } = useGLTF(GLB_PATH)

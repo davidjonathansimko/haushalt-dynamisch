@@ -20,7 +20,7 @@ const PRICES_EUR = {
   WANDLAMPE: 129,
 }
 
-const GLB_PATH = "/room2to8/room3/cozy_living_room_baked.glb"
+const GLB_PATH = "/room2to8/room3/cozy_living_room_baked-draco.glb"
 
 export function CozyLivingScene(props) {
   const { nodes, materials } = useGLTF(GLB_PATH)
