@@ -62,10 +62,6 @@ export function RotateHint() {
 export function Effects({ roomId = "default" }) {
   const { size } = useThree()
   const isTouch = isTouchDevice()
-  const touchTarget = useRef({ x: 0, y: 0, zoom: 0 })
-  const touchCurrent = useRef({ x: 0, y: 0, zoom: 0 })
-  const manualZoom = useRef(0)
-  const autoZoom = useRef(0)
   const cameraControlActive = useRef(false)
   const savedCamera = useRef(null)
   const storageKey = `haushalt-camera-${roomId}`
@@ -138,7 +134,9 @@ export function Effects({ roomId = "default" }) {
     }
   }, [])
 
+  // Desktop mouse drag for admin camera control mode
   useEffect(() => {
+    if (isTouch) return // Skip mouse events on touch devices
     const onDown = (e) => {
       if (!cameraControlActive.current) return
       dragState.current = {
@@ -153,9 +151,7 @@ export function Effects({ roomId = "default" }) {
       if (!dragState.current.dragging) return
       const dx = (e.clientX - dragState.current.startX) / window.innerWidth * Math.PI * 2
       const dy = (e.clientY - dragState.current.startY) / window.innerHeight * Math.PI
-      // Horizontal: full 360° — no clamping on theta
       orbit.current.theta = dragState.current.baseTheta - dx
-      // Vertical: clamp between ~10° and ~170° to avoid gimbal lock at poles
       orbit.current.phi = Math.max(0.15, Math.min(Math.PI - 0.15, dragState.current.basePhi - dy))
     }
     const onUp = () => {
@@ -179,54 +175,100 @@ export function Effects({ roomId = "default" }) {
       window.removeEventListener("mouseup", onUp)
       window.removeEventListener("wheel", onWheel)
     }
-  }, [])
+  }, [isTouch])
 
   // Auto-zoom on mobile tap selection
+  const autoZoomTarget = useRef(0)
+  const autoZoomCurrent = useRef(0)
   useEffect(() => {
     if (!isTouch) return
-    const onSelect = (e) => { autoZoom.current = e.detail ? 1.2 : 0 }
+    const onSelect = (e) => { autoZoomTarget.current = e.detail ? 1.2 : 0 }
     window.addEventListener("mobile-select", onSelect)
     return () => window.removeEventListener("mobile-select", onSelect)
   }, [isTouch])
 
-  // Swipe + Pinch-to-Zoom on mobile
+  // ===== Mobile Touch: Orbit swipe + pinch zoom =====
+  // On mobile, user can swipe to rotate (theta/phi) and pinch to zoom (radius)
+  // Clamped so they stay inside the room and can't see outside
+  const mobileTouchState = useRef({
+    dragging: false,
+    pinching: false,
+    startX: 0, startY: 0,
+    baseTheta: 0, basePhi: 0,
+    initialPinchDist: 0, baseRadius: 0,
+  })
+
   useEffect(() => {
     if (!isTouch) return
-    let startX = 0, startY = 0, baseX = 0, baseY = 0
-    let initialPinchDist = 0, baseZoom = 0
+
     const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+    const mts = mobileTouchState.current
 
     const onStart = (e) => {
       if (e.touches.length === 2) {
-        initialPinchDist = dist(e.touches[0], e.touches[1])
-        baseZoom = touchTarget.current.zoom || 0
+        // Pinch start
+        mts.pinching = true
+        mts.dragging = false
+        mts.initialPinchDist = dist(e.touches[0], e.touches[1])
+        mts.baseRadius = orbit.current.radius
       } else if (e.touches.length === 1) {
-        startX = e.touches[0].clientX; startY = e.touches[0].clientY
-        baseX = touchTarget.current.x; baseY = touchTarget.current.y
+        // Single finger drag start
+        mts.dragging = true
+        mts.pinching = false
+        mts.startX = e.touches[0].clientX
+        mts.startY = e.touches[0].clientY
+        mts.baseTheta = orbit.current.theta
+        mts.basePhi = orbit.current.phi
       }
     }
+
     const onMove = (e) => {
-      if (e.touches.length === 2) {
+      if (mts.pinching && e.touches.length === 2) {
+        // Pinch zoom — adjust radius
         const d = dist(e.touches[0], e.touches[1])
-        touchTarget.current.zoom = Math.max(-1, Math.min(3, baseZoom + (d - initialPinchDist) / 200))
-      } else if (e.touches.length === 1) {
-        const dx = (e.touches[0].clientX - startX) / window.innerWidth * 5
-        const dy = (e.touches[0].clientY - startY) / window.innerHeight * 2.5
-        touchTarget.current.x = Math.max(-1.2, Math.min(1.2, baseX + dx))
-        touchTarget.current.y = Math.max(-0.3, Math.min(0.5, baseY + dy))
+        const delta = (d - mts.initialPinchDist) / 150
+        // Clamp radius: don't zoom out too far (sky visible) or in too close (through walls)
+        orbit.current.radius = Math.max(4.5, Math.min(10, mts.baseRadius - delta))
+      } else if (mts.dragging && e.touches.length === 1) {
+        // Swipe to rotate — adjust theta (left/right) and phi (up/down)
+        const dx = (e.touches[0].clientX - mts.startX) / window.innerWidth * Math.PI * 1.2
+        const dy = (e.touches[0].clientY - mts.startY) / window.innerHeight * Math.PI * 0.6
+
+        // Theta: limit horizontal rotation so user stays facing the room interior
+        // Clamp to roughly ±45° from default view
+        const thetaMin = DEFAULT_THETA - 0.55
+        const thetaMax = DEFAULT_THETA + 0.55
+        orbit.current.theta = Math.max(thetaMin, Math.min(thetaMax, mts.baseTheta - dx))
+
+        // Phi: limit vertical rotation so user can't look through ceiling or floor
+        // Keep between ~50° and ~100° from vertical
+        orbit.current.phi = Math.max(0.85, Math.min(1.55, mts.basePhi - dy))
       }
     }
+
+    const onEnd = () => {
+      mts.dragging = false
+      mts.pinching = false
+    }
+
     window.addEventListener("touchstart", onStart, { passive: true })
     window.addEventListener("touchmove", onMove, { passive: true })
+    window.addEventListener("touchend", onEnd, { passive: true })
+    window.addEventListener("touchcancel", onEnd, { passive: true })
     return () => {
       window.removeEventListener("touchstart", onStart)
       window.removeEventListener("touchmove", onMove)
+      window.removeEventListener("touchend", onEnd)
+      window.removeEventListener("touchcancel", onEnd)
     }
   }, [isTouch])
 
   // Camera animation per frame
   useFrame((state, delta) => {
-    // If camera control is actively being dragged, use pure orbit (no mouse hover)
+    // Smoothly animate auto-zoom
+    autoZoomCurrent.current += (autoZoomTarget.current - autoZoomCurrent.current) * 0.06
+
+    // If camera control is actively being dragged (admin desktop), use pure orbit
     if (cameraControlActive.current) {
       const o = orbit.current
       const center = ORBIT_CENTER.current
@@ -239,50 +281,37 @@ export function Effects({ roomId = "default" }) {
       return
     }
 
-    // Use saved orbit (or default) + subtle mouse hover on desktop
-    if (savedCamera.current || !isTouch) {
-      const o = savedCamera.current || orbit.current
+    // Mobile touch: use orbit system with smooth damping
+    if (isTouch) {
+      const o = orbit.current
       const center = ORBIT_CENTER.current
-      const r = o.radius
-      // Base spherical position
-      const baseX = center[0] + r * Math.sin(o.phi) * Math.sin(o.theta)
-      const baseY = center[1] + r * Math.cos(o.phi)
-      const baseZ = center[2] + r * Math.sin(o.phi) * Math.cos(o.theta)
-
-      if (!isTouch) {
-        // Add subtle mouse hover offset (±0.3 range) for a living feel
-        const px = Math.max(-0.5, Math.min(0.5, state.pointer.x))
-        const py = Math.max(-0.3, Math.min(0.3, state.pointer.y))
-        const hoverX = baseX + px * 0.3
-        const hoverY = baseY + py * 0.15
-        const hoverZ = baseZ
-        easing.damp3(state.camera.position, [hoverX, hoverY, hoverZ], 0.3, delta)
-      } else {
-        easing.damp3(state.camera.position, [baseX, baseY, baseZ], 0.25, delta)
-      }
-      // Look at center with slight hover influence
-      const lx = center[0] + (isTouch ? 0 : state.pointer.x * 0.08)
-      const ly = center[1] + (isTouch ? 0 : state.pointer.y * 0.04)
-      state.camera.lookAt(lx, ly, center[2])
+      // Subtract auto-zoom from radius for item selection zoom
+      const r = Math.max(4, o.radius - autoZoomCurrent.current)
+      const tX = center[0] + r * Math.sin(o.phi) * Math.sin(o.theta)
+      const tY = center[1] + r * Math.cos(o.phi)
+      const tZ = center[2] + r * Math.sin(o.phi) * Math.cos(o.theta)
+      easing.damp3(state.camera.position, [tX, tY, tZ], 0.25, delta)
+      state.camera.lookAt(center[0], center[1], center[2])
       return
     }
 
-    // Touch-only fallback (no saved camera)
-    const t = touchTarget.current, c = touchCurrent.current
-    c.x += (t.x - c.x) * 0.08
-    c.y += (t.y - c.y) * 0.08
-    c.zoom += (t.zoom - c.zoom) * 0.08
-    manualZoom.current = c.zoom
-    const totalZoom = manualZoom.current + autoZoom.current
-    let targetX = c.x
-    let targetY = 1 + c.y / 2
-    let targetZ = 8 + Math.atan(c.x * 2) - totalZoom
-    targetX = Math.max(-1.2, Math.min(1.2, targetX))
-    targetY = Math.max(0.75, Math.min(1.4, targetY))
-    targetZ = Math.max(5.5, Math.min(9.5, targetZ))
-    easing.damp3(state.camera.position, [targetX, targetY, targetZ], 0.3, delta)
-    const lookX = Math.max(-1.0, Math.min(1.0, state.camera.position.x * 0.9))
-    state.camera.lookAt(lookX, 0.2, -4)
+    // Desktop: use saved orbit (or default) + subtle mouse hover
+    const o = savedCamera.current || orbit.current
+    const center = ORBIT_CENTER.current
+    const r = o.radius
+    const baseX = center[0] + r * Math.sin(o.phi) * Math.sin(o.theta)
+    const baseY = center[1] + r * Math.cos(o.phi)
+    const baseZ = center[2] + r * Math.sin(o.phi) * Math.cos(o.theta)
+
+    // Add subtle mouse hover offset for a living feel
+    const px = Math.max(-0.5, Math.min(0.5, state.pointer.x))
+    const py = Math.max(-0.3, Math.min(0.3, state.pointer.y))
+    const hoverX = baseX + px * 0.3
+    const hoverY = baseY + py * 0.15
+    easing.damp3(state.camera.position, [hoverX, hoverY, baseZ], 0.3, delta)
+    const lx = center[0] + state.pointer.x * 0.08
+    const ly = center[1] + state.pointer.y * 0.04
+    state.camera.lookAt(lx, ly, center[2])
   })
 
   return (
