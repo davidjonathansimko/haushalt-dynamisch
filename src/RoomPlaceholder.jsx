@@ -45,14 +45,14 @@ export function RoomPlaceholder() {
           fontSize: "clamp(36px, 10vw, 72px)", fontWeight: 800,
           letterSpacing: "-2px", margin: 0, lineHeight: 1,
         }}>
-          Room {id}
+          {t.room || "Zimmer"} {id}
         </h1>
         <p style={{
           fontSize: "clamp(13px, 3vw, 16px)",
           color: "rgba(255,255,255,0.45)",
           marginTop: 20, maxWidth: 400, lineHeight: 1.6,
         }}>
-          Coming soon — 3D-Erlebnis wird bald verfügbar sein.
+          {t.comingSoon || "Coming soon — 3D-Erlebnis wird bald verfügbar sein."}
         </p>
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 32 }}>
