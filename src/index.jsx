@@ -15,6 +15,7 @@ const GalleryPage = lazy(() => import("./GalleryPage").then(m => ({ default: m.G
 const RoomApp = lazy(() => import("./RoomApp").then(m => ({ default: m.RoomApp })))
 const DiningApp = lazy(() => import("./DiningApp").then(m => ({ default: m.DiningApp })))
 const CozyLivingApp = lazy(() => import("./CozyLivingApp").then(m => ({ default: m.CozyLivingApp })))
+const BathroomApp = lazy(() => import("./BathroomApp").then(m => ({ default: m.BathroomApp })))
 const RoomPlaceholder = lazy(() => import("./RoomPlaceholder").then(m => ({ default: m.RoomPlaceholder })))
 
 function RouteFallback() {
@@ -57,6 +58,7 @@ createRoot(document.getElementById("root")).render(
               <Route path="/galerie" element={<GalleryPage />} />
               <Route path="/dining" element={<DiningApp />} />
               <Route path="/cozy-living" element={<CozyLivingApp />} />
+              <Route path="/bathroom" element={<BathroomApp />} />
               <Route path="/room/1" element={<RoomApp />} />
               <Route path="/room/:id" element={<RoomPlaceholder />} />
             </Routes>

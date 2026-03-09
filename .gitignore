@@ -46,5 +46,11 @@ public/room2to8/room3/scene.bin
 public/room2to8/room3/scene.gltf
 public/room2to8/room3/textures/
 public/room2to8/room3/license.txt
+public/room2to8/room4/cozy_bathroom_design.glb
+public/room2to8/room4/scene.bin
+public/room2to8/room4/scene.gltf
+public/room2to8/room4/textures/
+public/room2to8/room4/license.txt
+public/room2to8/room4/*.zip
 *.blend
 *.exr

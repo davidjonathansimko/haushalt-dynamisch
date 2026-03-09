@@ -17,6 +17,7 @@ const galleryState = proxy({
     "/room2.jpg",
     "/room2to8/room2/room2.png",
     "/room2to8/room3/room3.png",
+    "/room2to8/room4/room4.png",
     "/room3.jpg",
     "/room4.jpg",
     "/room5.jpg",
@@ -32,7 +33,7 @@ const galleryState = proxy({
     "/room/1",
     "/dining",
     "/cozy-living",
-    "/room/3",
+    "/bathroom",
     "/room/3",
     "/room/4",
     "/room/5",
@@ -369,6 +370,7 @@ function GalleryAction({ navigate, mobile, t }) {
     : clicked === 1 ? t.room1
     : clicked === 3 ? t.dining
     : clicked === 4 ? t.cozyLiving
+    : clicked === 5 ? t.bathroom
     : `Room ${clicked}`
 
   return (
