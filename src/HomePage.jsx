@@ -542,7 +542,7 @@ export function HomePage() {
         padding: mobile ? "32px 20px 80px" : "40px 48px", borderTop: `1px solid ${c.footerBorder}`,
         display: "flex", flexDirection: "column", alignItems: "center", gap: "20px",
       }}>
-        <div style={{ color: c.footerText, fontSize: "12px", fontWeight: 500 }}>© 2026 Haushalt. {t.rights}.</div>
+        <div style={{ color: c.footerText, fontSize: "12px", fontWeight: 500 }}>© 2026 Haushalt. {t.rights}.David Ionathan Simko</div>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
           <button onClick={() => document.getElementById("impressum-modal")?.showModal()} style={{
             background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: "20px",
