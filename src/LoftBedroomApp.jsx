@@ -67,13 +67,13 @@ export function LoftBedroomApp() {
       <SceneOverlay items={LOFT_ITEMS} hovered={hovered} roomId="loft-bedroom" />
       <Suspense fallback={<Loader />}>
         <Canvas
-          flat
           dpr={[1, isTouch ? 1 : 1.5]}
-          gl={{ antialias: false, powerPreference: "high-performance" }}
+          gl={{ antialias: true, powerPreference: "high-performance", toneMapping: 4 }}
           camera={{ position: [-0.4, 1.0, 2.2], fov: isTouch ? (isLandscape ? 32 : 30) : 25, near: 0.5, far: 20 }}
+          shadows
           style={{ touchAction: "none" }}
         >
-          <ambientLight intensity={1.5 * Math.PI} />
+          <ambientLight intensity={2.0 * Math.PI} />
           <color attach="background" args={["#f5f2ee"]} />
           <Sky />
           <AdaptiveDpr pixelated />

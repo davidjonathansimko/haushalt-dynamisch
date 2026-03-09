@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { debounce } from "lodash"
-import { useGLTF, Text } from "@react-three/drei"
+import { useGLTF, Text, Environment } from "@react-three/drei"
 import { Select } from "@react-three/postprocessing"
 import { useThree } from "@react-three/fiber"
+import * as THREE from "three"
 import { Price } from "./Price"
 import { useLang, useTranslations, itemNames } from "./i18n"
 import { isTouchDevice } from "./shared"
@@ -61,8 +62,46 @@ export function LoftBedroomScene(props) {
   const displayName = hovered ? getLocalName(hovered) : t.defaultTitleLoft
   const { size } = useThree()
   const isPortraitMobile = size.width < size.height && size.width < 600
-  // Price at bottom over the dark floor for better visibility
-  const pricePos = isPortraitMobile ? [0, -1.1, 0.5] : [0, -1.1, 0.5]
+  // Price on the right wall near the toilet
+  const pricePos = isPortraitMobile ? [1.8, 0.1, -0.8] : [1.8, 0.1, -0.8]
+
+  // Override mirror material to be reflective bright
+  const mirrorMat = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#c8dde8"),
+      metalness: 0.95,
+      roughness: 0.05,
+      envMapIntensity: 2.5,
+    })
+    return mat
+  }, [])
+
+  // Brighten the floor material
+  useEffect(() => {
+    if (materials.Floor) {
+      materials.Floor.color = new THREE.Color("#d4cfc8")
+      materials.Floor.roughness = 0.4
+      materials.Floor.metalness = 0.0
+      materials.Floor.needsUpdate = true
+    }
+    // Make MirrorLight (ring around mirror) glow
+    if (materials.MirrorLight) {
+      materials.MirrorLight.emissive = new THREE.Color("#ffffff")
+      materials.MirrorLight.emissiveIntensity = 1.5
+      materials.MirrorLight.needsUpdate = true
+    }
+    // Make WindowLight glow to simulate light through window
+    if (materials.WindowLight) {
+      materials.WindowLight.emissive = new THREE.Color("#fff8e7")
+      materials.WindowLight.emissiveIntensity = 2.0
+      materials.WindowLight.needsUpdate = true
+    }
+    // Brighten walls slightly
+    if (materials.SideWalls) {
+      materials.SideWalls.roughness = 0.6
+      materials.SideWalls.needsUpdate = true
+    }
+  }, [materials])
 
   return (
     <>
@@ -98,7 +137,7 @@ export function LoftBedroomScene(props) {
 
               {/* ===== Interactive: SPIEGEL (Mirror) ===== */}
               <Select enabled={hovered === "SPIEGEL"} onPointerOver={over("SPIEGEL")} onPointerOut={out} onClick={tap("SPIEGEL")}>
-                <mesh geometry={nodes.Bathroom_Mirror_0.geometry} material={materials.Mirror} />
+                <mesh geometry={nodes.Bathroom_Mirror_0.geometry} material={mirrorMat} />
               </Select>
 
               {/* ===== Interactive: BADTEPPICH (Bath Rug) ===== */}
@@ -128,8 +167,27 @@ export function LoftBedroomScene(props) {
         </group>
       </group>
 
-      <Text position={[0, -0.85, 0.5]} color="#ffffff" fontSize={0.12} font="NotoSans-Regular.ttf" letterSpacing={-0.05}
-        outlineWidth={0.005} outlineColor="#000000">
+      {/* Sunlight streaming through the window from the left */}
+      <directionalLight
+        position={[-4, 3, 1]}
+        intensity={3.0}
+        color="#fff5e0"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={15}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+      />
+      {/* Warm fill light to brighten the scene */}
+      <pointLight position={[0, 2, 0]} intensity={1.5} color="#ffeedd" distance={8} />
+      {/* Environment for mirror reflections */}
+      <Environment preset="apartment" />
+
+      <Text position={[1.8, 0.35, -0.8]} color="#1a1a1a" fontSize={0.1} font="NotoSans-Regular.ttf" letterSpacing={-0.05}
+        outlineWidth={0.004} outlineColor="#ffffff" rotation={[0, -Math.PI / 2, 0]}>
         {displayName}
       </Text>
       <Price value={priceEur} currency="€" position={pricePos} />
