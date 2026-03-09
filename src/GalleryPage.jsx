@@ -16,16 +16,15 @@ const galleryState = proxy({
     "/room1new.png",       // 1  → Zimmer
     "/room2to8/room2/room2.png", // 2  → Dining
     "/room2to8/room3/room3.png", // 3  → Cozy Living
-    "/room2to8/room4/room4.png", // 4  → Badezimmer
-    "/room2.jpg",          // 5  → placeholder
-    "/room3.jpg",          // 6  → placeholder
-    "/room4.jpg",          // 7  → placeholder
-    "/room5.jpg",          // 8  → placeholder
-    "/room6.jpg",          // 9  → placeholder
-    "/room7.jpg",          // 10 → placeholder
-    "/room8.jpg",          // 11 → placeholder
-    "/room9.jpg",          // 12 → placeholder
-    "/room10.jpg",         // 13 → placeholder
+    "/room2.jpg",          // 4  → placeholder
+    "/room3.jpg",          // 5  → placeholder
+    "/room4.jpg",          // 6  → placeholder
+    "/room5.jpg",          // 7  → placeholder
+    "/room6.jpg",          // 8  → placeholder
+    "/room7.jpg",          // 9  → placeholder
+    "/room8.jpg",          // 10 → placeholder
+    "/room9.jpg",          // 11 → placeholder
+    "/room10.jpg",         // 12 → placeholder
   ],
   // Maps index → route
   routes: [
@@ -33,16 +32,15 @@ const galleryState = proxy({
     "/room/1",       // 1
     "/dining",       // 2
     "/cozy-living",  // 3
-    "/bathroom",     // 4
-    "/room/2",       // 5
-    "/room/3",       // 6
-    "/room/4",       // 7
-    "/room/5",       // 8
-    "/room/6",       // 9
-    "/room/7",       // 10
-    "/room/8",       // 11
-    "/room/9",       // 12
-    "/room/10",      // 13
+    "/room/2",       // 4
+    "/room/3",       // 5
+    "/room/4",       // 6
+    "/room/5",       // 7
+    "/room/6",       // 8
+    "/room/7",       // 9
+    "/room/8",       // 10
+    "/room/9",       // 11
+    "/room/10",      // 12
   ],
 })
 
@@ -371,7 +369,6 @@ function GalleryAction({ navigate, mobile, t }) {
     : clicked === 1 ? t.room1
     : clicked === 2 ? t.dining
     : clicked === 3 ? t.cozyLiving
-    : clicked === 4 ? t.bathroom
     : `Room ${clicked}`
 
   return (
