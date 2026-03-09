@@ -102,6 +102,12 @@ const CozyLivingIcon = ({ size = 32, color = "#1a1a1a" }) => (
     <path d="M2 14v4" /><path d="M22 14v4" />
   </svg>
 )
+const LoftBedroomIcon = ({ size = 32, color = "#1a1a1a" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 21V5a2 2 0 012-2h12a2 2 0 012 2v16" /><path d="M4 21h16" />
+    <path d="M9 7h6v4H9z" /><circle cx="12" cy="17" r="2" /><path d="M12 15v-2" />
+  </svg>
+)
 
 // ===== Scroll-triggered visibility hook =====
 function useInView(ref, threshold = 0.2) {
@@ -173,6 +179,7 @@ export function HomePage() {
     { icon: RoomIcon, title: t.room, desc: t.roomDesc, path: "/room/1" },
     { icon: DiningIcon, title: t.dining, desc: t.diningDesc, path: "/dining" },
     { icon: CozyLivingIcon, title: t.cozyLiving, desc: t.cozyLivingDesc, path: "/cozy-living" },
+    { icon: LoftBedroomIcon, title: t.loftBedroom, desc: t.loftBedroomDesc, path: "/loft-bedroom" },
   ]
 
   const navItems = [
